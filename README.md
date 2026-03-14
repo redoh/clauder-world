@@ -8,6 +8,8 @@
 
 <div align="center" style="margin-top: 25px;">
 
+[![stars](https://img.shields.io/github/stars/redoh/clauder-world?style=flat&color=0183ff)](https://github.com/redoh/clauder-world)
+[![npm downloads](https://img.shields.io/npm/dm/clauder-world?color=0183ff)](https://www.npmjs.com/package/clauder-world)
 [![nextjs](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs&color=0183ff)](https://nextjs.org/)
 [![react](https://img.shields.io/badge/React-19-blue?logo=react&color=0183ff)](https://react.dev/)
 [![typescript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript&color=0183ff)](https://www.typescriptlang.org/)
@@ -25,7 +27,7 @@ Clauder World turns your Claude Code activity into something visual and social. 
 
 Think of it as a multiplayer pixel-art office where the work is real.
 
-<!-- ![Clauder World screenshot](screenshot.png) -->
+![Clauder World screenshot](screenshots/image.png)
 
 ## Features
 
