@@ -25,7 +25,7 @@ export function UserMenu() {
     return (
       <div className="flex items-center gap-2">
         <Link href="/sign-in">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" className="text-zinc-300 hover:text-white hover:bg-zinc-700">
             Sign in
           </Button>
         </Link>
@@ -46,7 +46,7 @@ export function UserMenu() {
             className="h-7 w-7 rounded-full"
           />
         )}
-        <span className="text-sm font-medium text-foreground">
+        <span className="text-sm font-medium text-white">
           {session.user.name}
         </span>
         {instanceCount > 0 && (
@@ -56,9 +56,17 @@ export function UserMenu() {
           </span>
         )}
       </div>
+      {session.user.role === "admin" && (
+        <Link href="/admin">
+          <Button variant="outline" size="sm" className="border-zinc-600 text-white hover:bg-zinc-700">
+            Admin
+          </Button>
+        </Link>
+      )}
       <Button
         variant="ghost"
         size="sm"
+        className="text-zinc-300 hover:text-white hover:bg-zinc-700"
         onClick={() => signOut({ fetchOptions: { onSuccess: () => window.location.reload() } })}
       >
         Sign out

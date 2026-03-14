@@ -10,6 +10,7 @@ import {
   type AssetEntry,
   type MapTheme,
 } from "@/lib/asset-catalog"
+import { useSession } from "@/lib/auth-client"
 import {
   RiEraserLine,
   RiDownloadLine,
@@ -21,6 +22,7 @@ import {
   RiSparklingLine,
   RiLoader4Line,
   RiSipLine,
+  RiSaveLine,
 } from "@remixicon/react"
 
 // ============================================================
@@ -598,32 +600,32 @@ const ROOM_WALL_THEMES: Record<RoomRole, string[]> = {
 }
 
 const ROOM_PROPS: Record<RoomRole, string[]> = {
-  entrance:     ["stoneColumn_S", "stoneColumnWood_S"],
-  corridor_hub: ["barrel_S", "woodenCrate_S"],
-  storage:      ["barrel_S", "barrels_S", "barrelsStacked_S", "woodenCrate_S", "woodenCrates_S", "woodenPile_S"],
-  prison:       ["chair_S", "barrel_S"],
-  dining:       ["tableRoundChairs_S", "tableRoundItemsChairs_S", "tableShortChairs_S", "barrel_S", "chair_S"],
-  treasure:     ["chestClosed_S", "chestOpen_S", "barrelsStacked_S"],
-  boss:         ["stoneColumn_S", "chestClosed_S"],
-  library:      ["tableShort_S", "tableRound_S", "chair_S", "woodenCrate_S"],
-  barracks:     ["tableChairsBroken_S", "barrel_S", "woodenPile_S", "chair_S"],
+  entrance:     ["stoneColumn_S", "stoneColumnWood_S", "barrel_S", "woodenCrate_S"],
+  corridor_hub: ["barrel_S", "woodenCrate_S", "stoneColumn_S", "chair_S"],
+  storage:      ["barrel_S", "barrels_S", "barrelsStacked_S", "woodenCrate_S", "woodenCrates_S", "woodenPile_S", "chair_S"],
+  prison:       ["chair_S", "barrel_S", "woodenCrate_S", "stoneColumn_S"],
+  dining:       ["tableRoundChairs_S", "tableRoundItemsChairs_S", "tableShortChairs_S", "barrel_S", "chair_S", "barrels_S"],
+  treasure:     ["chestClosed_S", "chestOpen_S", "barrelsStacked_S", "barrel_S", "stoneColumn_S", "woodenCrate_S"],
+  boss:         ["stoneColumn_S", "stoneColumnWood_S", "chestClosed_S", "chestOpen_S", "barrel_S"],
+  library:      ["tableShort_S", "tableRound_S", "tableShortChairs_S", "chair_S", "woodenCrate_S", "woodenCrates_S", "barrel_S"],
+  barracks:     ["tableChairsBroken_S", "barrel_S", "woodenPile_S", "chair_S", "woodenCrate_S", "barrels_S", "barrelsStacked_S"],
 }
 
 const ROOM_PROP_DENSITY: Record<RoomRole, number> = {
-  entrance: 0.05, corridor_hub: 0.06, storage: 0.3, prison: 0.08,
-  dining: 0.2, treasure: 0.15, boss: 0.06, library: 0.18, barracks: 0.15,
+  entrance: 0.12, corridor_hub: 0.1, storage: 0.4, prison: 0.15,
+  dining: 0.3, treasure: 0.25, boss: 0.12, library: 0.3, barracks: 0.25,
 }
 
 const ROOM_STRUCTURES: Record<RoomRole, string[]> = {
-  entrance:     ["stairs_S", "stairsAged_S"],
-  corridor_hub: [],
-  storage:      ["woodenSupports_S", "woodenSupportBeams_S"],
-  prison:       [],
-  dining:       [],
-  treasure:     ["stairsSpiral_S"],
-  boss:         ["bridge_S"],
-  library:      ["woodenSupportsBlock_S"],
-  barracks:     ["woodenSupports_S"],
+  entrance:     ["stairs_S", "stairsAged_S", "stairsSpiral_S"],
+  corridor_hub: ["woodenSupports_S", "stoneColumn_S"],
+  storage:      ["woodenSupports_S", "woodenSupportBeams_S", "woodenSupportsBlock_S"],
+  prison:       ["stoneColumn_S", "stoneColumnWood_S"],
+  dining:       ["woodenSupports_S", "woodenSupportsBeam_S"],
+  treasure:     ["stairsSpiral_S", "bridge_S"],
+  boss:         ["bridge_S", "bridgeBroken_S", "stairsSpiral_S"],
+  library:      ["woodenSupportsBlock_S", "woodenSupports_S", "stairsAged_S"],
+  barracks:     ["woodenSupports_S", "woodenSupportBeams_S"],
 }
 
 // BSP tree for dungeon partitioning
@@ -668,8 +670,10 @@ function bspCollectLeaves(node: BSPNode): BSPNode[] {
 
 function generateRandomDungeonMap(w: number, h: number): Cell[][] {
   const defaultGround = DEFAULT_GROUNDS.dungeon
+  // Start with a dark/void ground everywhere - only rooms and corridors get real floors
+  const VOID_GROUND = "stoneCorner_S" // dark corner tile for void areas
   const m: Cell[][] = Array.from({ length: h }, () =>
-    Array.from({ length: w }, () => ({ ground: defaultGround }))
+    Array.from({ length: w }, () => ({ ground: VOID_GROUND }))
   )
   const D = (n: string) => `/assets/dungeon/${n}.png`
 
@@ -690,15 +694,16 @@ function generateRandomDungeonMap(w: number, h: number): Cell[][] {
     const c = m[y][x]
     return !!c.building || !!c.prop || !!c.vehicle
   }
-  const isFloor = (x: number, y: number) => {
+  // "carved" = has a real floor tile (not void)
+  const isCarved = (x: number, y: number) => {
     if (x < 0 || x >= w || y < 0 || y >= h) return false
-    return m[y][x].ground !== defaultGround
+    return m[y][x].ground !== VOID_GROUND
   }
 
   // --- BSP partition ---
-  const minRoomDim = 3
-  const root: BSPNode = { x: 1, y: 1, w: w - 2, h: h - 2 }
-  const maxDepth = Math.min(5, Math.floor(Math.log2(Math.min(w, h))))
+  const minRoomDim = 4
+  const root: BSPNode = { x: 2, y: 2, w: w - 4, h: h - 4 }
+  const maxDepth = Math.min(4, Math.floor(Math.log2(Math.min(w, h))) - 1)
   bspSplit(root, minRoomDim, maxDepth)
   const leaves = bspCollectLeaves(root)
 
@@ -706,22 +711,23 @@ function generateRandomDungeonMap(w: number, h: number): Cell[][] {
   const roles: RoomRole[] = ["entrance", "boss", "treasure", "prison", "dining", "storage", "library", "barracks", "corridor_hub"]
   const shuffledRoles = [...roles].sort(() => Math.random() - 0.5)
 
-  // Create rooms inside each BSP leaf
+  // Create rooms - leave 2-tile gap between room and leaf edge for walls + spacing
   const rooms: DungeonRoom[] = []
   for (let i = 0; i < leaves.length; i++) {
     const leaf = leaves[i]
-    // Room is smaller than the leaf partition (padding)
-    const rw = minRoomDim + Math.floor(Math.random() * Math.max(1, leaf.w - minRoomDim - 1))
-    const rh = minRoomDim + Math.floor(Math.random() * Math.max(1, leaf.h - minRoomDim - 1))
-    const rx = leaf.x + Math.floor(Math.random() * Math.max(1, leaf.w - rw))
-    const ry = leaf.y + Math.floor(Math.random() * Math.max(1, leaf.h - rh))
+    const maxRW = Math.max(minRoomDim, leaf.w - 2)
+    const maxRH = Math.max(minRoomDim, leaf.h - 2)
+    const rw = minRoomDim + Math.floor(Math.random() * Math.max(1, maxRW - minRoomDim))
+    const rh = minRoomDim + Math.floor(Math.random() * Math.max(1, maxRH - minRoomDim))
+    const rx = leaf.x + 1 + Math.floor(Math.random() * Math.max(1, leaf.w - rw - 2))
+    const ry = leaf.y + 1 + Math.floor(Math.random() * Math.max(1, leaf.h - rh - 2))
     const role = shuffledRoles[i % shuffledRoles.length]
     const room: DungeonRoom = { x: rx, y: ry, w: rw, h: rh, role }
     leaf.room = room
     rooms.push(room)
   }
 
-  // --- Carve rooms ---
+  // --- Carve room floors (only rooms get floor tiles) ---
   for (const room of rooms) {
     const floorTiles = ROOM_FLOOR_THEMES[room.role]
     for (let y = room.y; y < room.y + room.h; y++) {
@@ -731,212 +737,158 @@ function generateRandomDungeonMap(w: number, h: number): Cell[][] {
     }
   }
 
-  // --- Connect rooms with corridors (L-shaped) ---
-  // Sort rooms by distance to create a spanning-tree-like connectivity
+  // --- Connect rooms with corridors ---
   const connected = new Set<number>([0])
   const unconnected = new Set<number>(rooms.map((_, i) => i).filter(i => i > 0))
-
   const roomCenter = (r: DungeonRoom) => ({ cx: Math.floor(r.x + r.w / 2), cy: Math.floor(r.y + r.h / 2) })
 
   while (unconnected.size > 0) {
-    let bestDist = Infinity
-    let bestFrom = 0
-    let bestTo = 0
-
+    let bestDist = Infinity, bestFrom = 0, bestTo = 0
     for (const ci of connected) {
       const a = roomCenter(rooms[ci])
       for (const ui of unconnected) {
         const b = roomCenter(rooms[ui])
         const dist = Math.abs(a.cx - b.cx) + Math.abs(a.cy - b.cy)
-        if (dist < bestDist) {
-          bestDist = dist
-          bestFrom = ci
-          bestTo = ui
-        }
+        if (dist < bestDist) { bestDist = dist; bestFrom = ci; bestTo = ui }
       }
     }
-
     connected.add(bestTo)
     unconnected.delete(bestTo)
 
     const a = roomCenter(rooms[bestFrom])
     const b = roomCenter(rooms[bestTo])
+    const corridorFloor = pick(["dirt_S", "stone_S"])
 
-    // Carve L-shaped corridor
-    const corridorFloor = pick(["dirt_S", "stoneTile_S", "stone_S"])
-    const carveCorridor = (x: number, y: number) => {
-      sg(x, y, corridorFloor)
-      // Also carve adjacent for width (1-wide corridor + walls on sides)
-      if (m[y]?.[x]?.building) delete m[y][x].building
+    const carve = (x: number, y: number) => {
+      if (x >= 0 && x < w && y >= 0 && y < h) {
+        sg(x, y, corridorFloor)
+        if (m[y][x].building) delete m[y][x].building
+      }
     }
 
-    // Randomly choose elbow direction
     if (chance(0.5)) {
-      // Horizontal first, then vertical
-      let cx = a.cx
-      while (cx !== b.cx) {
-        carveCorridor(cx, a.cy)
-        cx += cx < b.cx ? 1 : -1
-      }
-      let cy = a.cy
-      while (cy !== b.cy) {
-        carveCorridor(b.cx, cy)
-        cy += cy < b.cy ? 1 : -1
-      }
-      carveCorridor(b.cx, b.cy)
+      for (let cx = Math.min(a.cx, b.cx); cx <= Math.max(a.cx, b.cx); cx++) carve(cx, a.cy)
+      for (let cy = Math.min(a.cy, b.cy); cy <= Math.max(a.cy, b.cy); cy++) carve(b.cx, cy)
     } else {
-      // Vertical first, then horizontal
-      let cy = a.cy
-      while (cy !== b.cy) {
-        carveCorridor(a.cx, cy)
-        cy += cy < b.cy ? 1 : -1
-      }
-      let cx = a.cx
-      while (cx !== b.cx) {
-        carveCorridor(cx, b.cy)
-        cx += cx < b.cx ? 1 : -1
-      }
-      carveCorridor(b.cx, b.cy)
+      for (let cy = Math.min(a.cy, b.cy); cy <= Math.max(a.cy, b.cy); cy++) carve(a.cx, cy)
+      for (let cx = Math.min(a.cx, b.cx); cx <= Math.max(a.cx, b.cx); cx++) carve(cx, b.cy)
     }
   }
 
-  // --- Place walls around all floor tiles ---
-  const wallCandidates: [number, number][] = []
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (!isFloor(x, y)) {
-        // Check if adjacent to any floor tile
-        const adjFloor = isFloor(x-1, y) || isFloor(x+1, y) || isFloor(x, y-1) || isFloor(x, y+1)
-          || isFloor(x-1, y-1) || isFloor(x+1, y-1) || isFloor(x-1, y+1) || isFloor(x+1, y+1)
-        if (adjFloor) wallCandidates.push([x, y])
-      }
-    }
-  }
-
-  // Find which room is nearest to determine wall style
-  const nearestRoom = (x: number, y: number): DungeonRoom => {
-    let best = rooms[0]
-    let bestDist = Infinity
-    for (const r of rooms) {
-      const cx = r.x + r.w / 2
-      const cy = r.y + r.h / 2
-      const d = Math.abs(x - cx) + Math.abs(y - cy)
-      if (d < bestDist) { bestDist = d; best = r }
-    }
-    return best
-  }
-
-  for (const [x, y] of wallCandidates) {
-    const room = nearestRoom(x, y)
+  // --- Place walls: only 1-tile ring around each room's perimeter ---
+  for (const room of rooms) {
     const wallTiles = ROOM_WALL_THEMES[room.role]
 
-    // Corner detection
-    const floorN = isFloor(x, y-1)
-    const floorS = isFloor(x, y+1)
-    const floorE = isFloor(x+1, y)
-    const floorW = isFloor(x-1, y)
-    const isCorner = (floorN || floorS) && (floorE || floorW)
-
-    if (isCorner) {
-      sb(x, y, "stoneWallCorner_S")
-    } else {
-      sb(x, y, pick(wallTiles))
+    // Top edge
+    for (let x = room.x; x < room.x + room.w; x++) {
+      const wy = room.y - 1
+      if (wy >= 0 && !isCarved(x, wy) && !isOccupied(x, wy)) sb(x, wy, pick(wallTiles))
     }
-  }
-
-  // --- Place doors/archways at corridor-room intersections ---
-  for (const room of rooms) {
-    // Check each wall cell for corridor adjacency
-    const checkDoor = (wx: number, wy: number, floorDx: number, floorDy: number) => {
-      if (wx < 0 || wx >= w || wy < 0 || wy >= h) return
-      if (!m[wy][wx].building) return
-      // Check if the other side of the wall is a corridor floor
-      const ox = wx + floorDx
-      const oy = wy + floorDy
-      if (isFloor(ox, oy) && !rooms.some(r => ox >= r.x && ox < r.x + r.w && oy >= r.y && oy < r.y + r.h)) {
-        // This wall borders a corridor - make it a door
-        const doorTile = room.role === "prison" ? "stoneWallDoorBars_S"
-          : room.role === "treasure" ? "stoneWallGateClosed_S"
-          : pick(["stoneWallDoor_S", "stoneWallArchway_S", "stoneWallDoorOpen_S"])
-        m[wy][wx].building = D(doorTile)
+    // Bottom edge
+    for (let x = room.x; x < room.x + room.w; x++) {
+      const wy = room.y + room.h
+      if (wy < h && !isCarved(x, wy) && !isOccupied(x, wy)) sb(x, wy, pick(wallTiles))
+    }
+    // Left edge
+    for (let y = room.y; y < room.y + room.h; y++) {
+      const wx = room.x - 1
+      if (wx >= 0 && !isCarved(wx, y) && !isOccupied(wx, y)) sb(wx, y, pick(wallTiles))
+    }
+    // Right edge
+    for (let y = room.y; y < room.y + room.h; y++) {
+      const wx = room.x + room.w
+      if (wx < w && !isCarved(wx, y) && !isOccupied(wx, y)) sb(wx, y, pick(wallTiles))
+    }
+    // 4 corners
+    for (const [cx, cy] of [
+      [room.x - 1, room.y - 1], [room.x + room.w, room.y - 1],
+      [room.x - 1, room.y + room.h], [room.x + room.w, room.y + room.h],
+    ]) {
+      if (cx >= 0 && cx < w && cy >= 0 && cy < h && !isCarved(cx, cy) && !isOccupied(cx, cy)) {
+        sb(cx, cy, "stoneWallCorner_S")
       }
     }
-    // Top wall
-    for (let x = room.x; x < room.x + room.w; x++) checkDoor(x, room.y - 1, 0, -1)
-    // Bottom wall
-    for (let x = room.x; x < room.x + room.w; x++) checkDoor(x, room.y + room.h, 0, 1)
-    // Left wall
-    for (let y = room.y; y < room.y + room.h; y++) checkDoor(room.x - 1, y, -1, 0)
-    // Right wall
-    for (let y = room.y; y < room.y + room.h; y++) checkDoor(room.x + room.w, y, 1, 0)
   }
 
-  // --- Decorate rooms with props ---
+  // --- Doors where corridors meet room walls ---
+  for (const room of rooms) {
+    const checkDoor = (wx: number, wy: number, dx: number, dy: number) => {
+      if (wx < 0 || wx >= w || wy < 0 || wy >= h) return
+      if (!m[wy][wx].building) return
+      if (isCarved(wx + dx, wy + dy)) {
+        const inAnotherRoom = rooms.some(r => r !== room && wx + dx >= r.x && wx + dx < r.x + r.w && wy + dy >= r.y && wy + dy < r.y + r.h)
+        if (!inAnotherRoom) {
+          const doorTile = room.role === "prison" ? "stoneWallDoorBars_S"
+            : room.role === "treasure" ? "stoneWallGateClosed_S"
+            : pick(["stoneWallDoor_S", "stoneWallArchway_S", "stoneWallDoorOpen_S"])
+          m[wy][wx].building = D(doorTile)
+        }
+      }
+    }
+    for (let x = room.x; x < room.x + room.w; x++) { checkDoor(x, room.y - 1, 0, -1); checkDoor(x, room.y + room.h, 0, 1) }
+    for (let y = room.y; y < room.y + room.h; y++) { checkDoor(room.x - 1, y, -1, 0); checkDoor(room.x + room.w, y, 1, 0) }
+  }
+
+  // --- Decorate rooms ---
   for (const room of rooms) {
     const props = ROOM_PROPS[room.role]
     const density = ROOM_PROP_DENSITY[room.role]
-
-    for (let y = room.y; y < room.y + room.h; y++) {
-      for (let x = room.x; x < room.x + room.w; x++) {
-        if (!isOccupied(x, y) && chance(density)) {
-          sp(x, y, pick(props))
-        }
-      }
-    }
-
-    // Place room-specific structures
     const structures = ROOM_STRUCTURES[room.role]
-    if (structures.length > 0 && chance(0.6)) {
-      // Place structure near room center
+
+    // Center structure
+    if (structures.length > 0) {
       const cx = room.x + Math.floor(room.w / 2)
       const cy = room.y + Math.floor(room.h / 2)
-      if (!isOccupied(cx, cy)) {
-        sv(cx, cy, pick(structures))
+      if (!isOccupied(cx, cy)) sv(cx, cy, pick(structures))
+    }
+
+    // Props along room edges (inside)
+    for (let x = room.x; x < room.x + room.w; x++) {
+      if (!isOccupied(x, room.y) && chance(density)) sp(x, room.y, pick(props))
+      if (!isOccupied(x, room.y + room.h - 1) && chance(density)) sp(x, room.y + room.h - 1, pick(props))
+    }
+    for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
+      if (!isOccupied(room.x, y) && chance(density)) sp(room.x, y, pick(props))
+      if (!isOccupied(room.x + room.w - 1, y) && chance(density * 0.7)) sp(room.x + room.w - 1, y, pick(props))
+    }
+
+    // Interior props (sparse)
+    for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
+      for (let x = room.x + 1; x < room.x + room.w - 1; x++) {
+        if (!isOccupied(x, y) && chance(density * 0.3)) sp(x, y, pick(props))
       }
     }
 
-    // Special decorations per role
-    if (room.role === "treasure") {
-      // Place chests along back wall
-      for (let x = room.x; x < room.x + room.w; x++) {
-        if (!isOccupied(x, room.y) && chance(0.4)) sp(x, room.y, pick(["chestClosed_S", "chestOpen_S"]))
-      }
-    }
-    if (room.role === "prison") {
-      // Columns inside
-      if (room.w >= 5 && room.h >= 5) {
-        for (let x = room.x + 2; x < room.x + room.w - 1; x += 2) {
-          if (!isOccupied(x, room.y + 1)) sp(x, room.y + 1, "stoneColumn_S")
-          if (!isOccupied(x, room.y + room.h - 2)) sp(x, room.y + room.h - 2, "stoneColumn_S")
-        }
-      }
-    }
-    if (room.role === "boss") {
-      // Columns in corners
+    // Role-specific
+    if (room.role === "boss" || room.role === "prison") {
       const corners = [
         [room.x + 1, room.y + 1], [room.x + room.w - 2, room.y + 1],
         [room.x + 1, room.y + room.h - 2], [room.x + room.w - 2, room.y + room.h - 2],
       ]
       for (const [cx, cy] of corners) {
-        if (!isOccupied(cx, cy)) sp(cx, cy, "stoneColumn_S")
+        if (cx >= room.x && cy >= room.y && !isOccupied(cx, cy)) sp(cx, cy, "stoneColumn_S")
       }
     }
     if (room.role === "entrance") {
-      // Staircase
       const cx = room.x + Math.floor(room.w / 2)
       const cy = room.y + Math.floor(room.h / 2)
       if (!isOccupied(cx, cy)) sv(cx, cy, pick(["stairs_S", "stairsSpiral_S"]))
     }
+    if (room.role === "treasure") {
+      for (let x = room.x; x < room.x + room.w; x++) {
+        if (!isOccupied(x, room.y) && chance(0.5)) sp(x, room.y, pick(["chestClosed_S", "chestOpen_S"]))
+      }
+    }
   }
 
-  // --- Add wooden supports in corridors ---
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      if (!isFloor(x, y) || isOccupied(x, y)) continue
-      // Check if this is a corridor cell (not inside any room)
+  // --- Corridor decorations (sparse) ---
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!isCarved(x, y) || isOccupied(x, y)) continue
       const inRoom = rooms.some(r => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h)
-      if (!inRoom && chance(0.04)) {
-        sv(x, y, pick(["woodenSupports_S", "woodenSupportBeams_S", "woodenSupportsBeam_S"]))
+      if (!inRoom) {
+        if (chance(0.06)) sv(x, y, pick(["woodenSupports_S", "woodenSupportBeams_S"]))
+        else if (chance(0.04)) sp(x, y, pick(["barrel_S", "woodenCrate_S"]))
       }
     }
   }
@@ -970,6 +922,12 @@ export function MapBuilder() {
   const [aiPrompt, setAiPrompt] = useState("")
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
+
+  // Save to account
+  const { data: session } = useSession()
+  const [saveName, setSaveName] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [saveMsg, setSaveMsg] = useState<string | null>(null)
 
   const panRef = useRef({ x: 0, y: 0 })
   const zoomRef = useRef(1)
@@ -1092,10 +1050,10 @@ export function MapBuilder() {
         const screenY = sy + py
 
         if (
-          screenX < -TILE_W * 2 ||
-          screenX > W / z + TILE_W * 2 ||
-          screenY < -300 ||
-          screenY > H / z + TILE_H * 2
+          screenX < -TILE_W * 6 ||
+          screenX > W / z + TILE_W * 6 ||
+          screenY < -800 ||
+          screenY > H / z + TILE_H * 6
         )
           continue
 
@@ -1447,15 +1405,11 @@ export function MapBuilder() {
     zoomRef.current = newZ
   }, [])
 
-  // Export JSON
-  const exportJSON = useCallback(() => {
+  // Build legend+grid data from current map
+  const buildMapData = useCallback((): LegendMapJSON | null => {
     const map = mapRef.current
-
-    // Build legend: find all unique cell configurations and assign symbols
     const cellKeyToSymbol = new Map<string, string>()
     const legend: Record<string, LegendEntry> = {}
-
-    // Symbol pool: printable ASCII chars (skip space), then extended if needed
     const SYMBOL_POOL = "._~:;!@#$%^&*+=?/|\\<>abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     let symbolIdx = 0
 
@@ -1467,14 +1421,12 @@ export function MapBuilder() {
       return parts.join("|")
     }
 
-    // First pass: collect unique cell types
     for (const row of map) {
       for (const cell of row) {
         const key = getCellKey(cell)
         if (!cellKeyToSymbol.has(key)) {
           if (symbolIdx >= SYMBOL_POOL.length) {
-            alert("Map has too many unique tile combinations for legend format. Falling back to verbose export.")
-            return
+            return null
           }
           const sym = SYMBOL_POOL[symbolIdx++]
           cellKeyToSymbol.set(key, sym)
@@ -1487,12 +1439,20 @@ export function MapBuilder() {
       }
     }
 
-    // Second pass: build grid strings
     const grid: string[] = map.map((row) =>
       row.map((cell) => cellKeyToSymbol.get(getCellKey(cell))!).join("")
     )
 
-    const data: LegendMapJSON = { theme: themeRef.current, legend, grid }
+    return { theme: themeRef.current, legend, grid }
+  }, [])
+
+  // Export JSON
+  const exportJSON = useCallback(() => {
+    const data = buildMapData()
+    if (!data) {
+      alert("Map has too many unique tile combinations for legend export format.")
+      return
+    }
     const json = JSON.stringify(data, null, 2)
     const blob = new Blob([json], { type: "application/json" })
     const url = URL.createObjectURL(blob)
@@ -1501,7 +1461,46 @@ export function MapBuilder() {
     a.download = "map.json"
     a.click()
     URL.revokeObjectURL(url)
-  }, [])
+  }, [buildMapData])
+
+  // Save map to user account (uses cell array format - no symbol limit)
+  const saveToAccount = useCallback(async () => {
+    const name = saveName.trim()
+    if (!name) {
+      setSaveMsg("Enter a name")
+      return
+    }
+
+    // Try legend format first, fall back to cell array
+    const legendData = buildMapData()
+    const mapData = legendData ?? {
+      gridWidth: mapRef.current[0]?.length ?? 0,
+      gridHeight: mapRef.current.length,
+      theme: themeRef.current,
+      cells: mapRef.current,
+    }
+
+    setSaving(true)
+    setSaveMsg(null)
+    try {
+      const res = await fetch("/api/maps/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, mapData }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setSaveMsg(data.error || "Save failed")
+      } else {
+        setSaveMsg("Saved!")
+        setTimeout(() => setSaveMsg(null), 2000)
+      }
+    } catch {
+      setSaveMsg("Save failed")
+    } finally {
+      setSaving(false)
+    }
+  }, [saveName, buildMapData])
 
   // Import JSON – supports both legend+grid and legacy cell-array formats
   const importJSON = useCallback(() => {
@@ -1786,6 +1785,37 @@ export function MapBuilder() {
             <RiMagicLine className="size-3.5" />
             Random
           </button>
+          {session?.user && (
+            <>
+              <div className="w-px h-6 bg-zinc-600 mx-1" />
+              <input
+                type="text"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") saveToAccount() }}
+                placeholder="Map name..."
+                className="w-28 bg-zinc-800 text-white text-xs font-mono px-2 py-1.5 rounded border border-zinc-600 placeholder:text-zinc-500 focus:outline-none focus:border-cyan-500"
+              />
+              <button
+                onClick={saveToAccount}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-mono bg-cyan-700 text-white hover:bg-cyan-600 transition-colors disabled:opacity-40"
+                title="Save map to your account"
+              >
+                {saving ? (
+                  <RiLoader4Line className="size-3.5 animate-spin" />
+                ) : (
+                  <RiSaveLine className="size-3.5" />
+                )}
+                Save
+              </button>
+              {saveMsg && (
+                <span className={`text-xs font-mono ${saveMsg === "Saved!" ? "text-green-400" : "text-red-400"}`}>
+                  {saveMsg}
+                </span>
+              )}
+            </>
+          )}
         </div>
 
         {/* Grid size */}

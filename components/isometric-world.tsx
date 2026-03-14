@@ -493,6 +493,11 @@ export function IsometricWorld() {
         return updated
       })
     },
+    "map-change": (raw: unknown) => {
+      const data = raw as { map: string }
+      setLoaded(false)
+      loadMap(data.map)
+    },
   })
 
   // Speech bubble timer - randomly assign bubbles to characters
@@ -525,11 +530,11 @@ export function IsometricWorld() {
   const dragRef = useRef({ active: false, startX: 0, startY: 0, panStartX: 0, panStartY: 0 })
   const didDragRef = useRef(false)
 
-  useEffect(() => {
-    fetch("/map/city_map.json")
+  const loadMap = useCallback((mapId: string) => {
+    fetch(`/api/world/map/data?id=${mapId}`)
       .then((r) => r.json())
       .then((data) => {
-        const map = parseMapJSON(data)
+        const map = parseMapJSON(data.mapData)
         mapRef.current = map
         return loadImages(collectPaths(map))
       })
@@ -549,6 +554,14 @@ export function IsometricWorld() {
         console.error("Failed to load map:", err)
       })
   }, [])
+
+  // Load initial map from API
+  useEffect(() => {
+    fetch("/api/world/map")
+      .then((r) => r.json())
+      .then((data) => loadMap(data.map))
+      .catch(() => loadMap("city_map"))
+  }, [loadMap])
 
   const render = useCallback(
     (time: number) => {
@@ -600,7 +613,7 @@ export function IsometricWorld() {
           const scrX = sx + px
           const scrY = sy + py
 
-          if (scrX < -TILE_W * 3 || scrX > W / z + TILE_W * 3 || scrY < -400 || scrY > H / z + TILE_H * 3)
+          if (scrX < -TILE_W * 6 || scrX > W / z + TILE_W * 6 || scrY < -800 || scrY > H / z + TILE_H * 6)
             continue
 
           const cell = map[gy][gx]
@@ -660,7 +673,7 @@ export function IsometricWorld() {
         const { sx, sy } = gridToScreen(c.gridX, c.gridY)
         const scrX = sx + px
         const scrY = sy + py
-        if (scrX < -200 || scrX > W / z + 200 || scrY < -200 || scrY > H / z + 200) continue
+        if (scrX < -400 || scrX > W / z + 400 || scrY < -400 || scrY > H / z + 400) continue
         objectD.push({
           depth: (c.gridX + c.gridY) * 100 + c.gridX + 30,
           fn: () => drawCharacter(ctx, c, scrX, scrY, time),
@@ -712,6 +725,24 @@ export function IsometricWorld() {
     return () => cancelAnimationFrame(animRef.current)
   }, [loaded, render])
 
+  // Prevent browser gestures (pinch zoom, double-tap zoom) on the canvas
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const prevent = (e: Event) => e.preventDefault()
+    canvas.addEventListener("gesturestart", prevent, { passive: false })
+    canvas.addEventListener("gesturechange", prevent, { passive: false })
+    canvas.addEventListener("gestureend", prevent, { passive: false })
+    // Ensure wheel events with passive: false for preventDefault to work
+    canvas.addEventListener("wheel", prevent, { passive: false })
+    return () => {
+      canvas.removeEventListener("gesturestart", prevent)
+      canvas.removeEventListener("gesturechange", prevent)
+      canvas.removeEventListener("gestureend", prevent)
+      canvas.removeEventListener("wheel", prevent)
+    }
+  }, [])
+
   // Pan
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     didDragRef.current = false
@@ -759,9 +790,18 @@ export function IsometricWorld() {
     }
   }, [])
 
-  // Touch
+  // Touch (with pinch-to-zoom)
+  const pinchRef = useRef({ active: false, dist: 0, startZoom: 1 })
   const onTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault()
     didDragRef.current = false
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      pinchRef.current = { active: true, dist: Math.hypot(dx, dy), startZoom: zoomRef.current }
+      dragRef.current.active = false
+      return
+    }
     const t = e.touches[0]
     dragRef.current = {
       active: true,
@@ -770,6 +810,16 @@ export function IsometricWorld() {
     }
   }, [])
   const onTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault()
+    if (e.touches.length === 2 && pinchRef.current.active) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      const dist = Math.hypot(dx, dy)
+      const scale = dist / pinchRef.current.dist
+      zoomRef.current = Math.max(0.2, Math.min(4, pinchRef.current.startZoom * scale))
+      didDragRef.current = true
+      return
+    }
     if (!dragRef.current.active) return
     const t = e.touches[0]
     const dx = t.clientX - dragRef.current.startX
@@ -779,7 +829,10 @@ export function IsometricWorld() {
     panRef.current.x = dragRef.current.panStartX + dx / z
     panRef.current.y = dragRef.current.panStartY + dy / z
   }, [])
-  const onTouchEnd = useCallback(() => { dragRef.current.active = false }, [])
+  const onTouchEnd = useCallback(() => {
+    dragRef.current.active = false
+    pinchRef.current.active = false
+  }, [])
 
   // Click to move character
   const onClick = useCallback(
@@ -829,7 +882,7 @@ export function IsometricWorld() {
       <canvas
         ref={canvasRef}
         className="fixed inset-0 cursor-grab active:cursor-grabbing"
-        style={{ imageRendering: "pixelated" }}
+        style={{ imageRendering: "pixelated", touchAction: "none" }}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}

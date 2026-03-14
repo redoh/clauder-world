@@ -1,3 +1,4 @@
+import type { Viewport } from "next"
 import { Geist, Geist_Mono, Nunito_Sans } from "next/font/google"
 
 import "./globals.css"
@@ -12,6 +13,13 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -23,10 +31,12 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn("antialiased", fontMono.variable, "font-sans", nunitoSans.variable)}
     >
-      <body className="overflow-hidden">
+      <body className="overflow-hidden touch-none">
         <ThemeProvider>
           <header className="fixed top-0 right-0 left-0 z-50 flex items-center justify-end px-4 py-2">
-            <UserMenu />
+            <div className="rounded-lg bg-zinc-900 px-4 py-2">
+              <UserMenu />
+            </div>
           </header>
           {children}
         </ThemeProvider>

@@ -56,7 +56,7 @@ Think of it as a multiplayer pixel-art office where the work is real.
 
 ### Prerequisites
 
-- Node.js 18+
+- [Bun](https://bun.sh/) (v1.x+)
 - Docker (for PostgreSQL)
 
 ### Setup
@@ -67,7 +67,7 @@ git clone https://github.com/redoh/clauder-world.git
 cd clauder-world
 
 # Install dependencies
-npm install
+bun install
 
 # Start PostgreSQL
 docker compose up -d
@@ -77,10 +77,10 @@ cp .env.example .env
 # Fill in: DATABASE_URL, PUBBY_*, BETTER_AUTH_*, OAuth credentials, RESEND_API_KEY
 
 # Run database migrations
-npx prisma migrate dev
+bunx prisma migrate dev
 
 # Start the dev server
-npm run dev
+bun dev
 ```
 
 The app will be available at `http://localhost:3000`.

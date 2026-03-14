@@ -22,9 +22,10 @@ model user {
   banReason  String?
   banExpires DateTime?
 
-  sessions session[]
-  accounts account[]
-  cliToken cliToken?
+  sessions  session[]
+  accounts  account[]
+  cliToken  cliToken?
+  savedMaps savedMap[]
 }
 
 model session {
@@ -68,6 +69,21 @@ model cliToken {
   createdAt DateTime @default(now())
 
   user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model savedMap {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  mapData   Json
+  published Boolean  @default(false)
+  builtIn   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model verification {
