@@ -1,0 +1,240 @@
+{
+  "theme": "city",
+  "legend": {
+    ".": {
+      "g": "tile_ground_grass"
+    },
+    "_": {
+      "g": "tile_ground_concrete_normal"
+    },
+    "~": {
+      "g": "tile_road_straight_SW_normal"
+    },
+    ":": {
+      "g": "tile_cropfield_racked",
+      "p": "/assets/city/Props/prop_fence_wood_SE_normal.png"
+    },
+    ";": {
+      "g": "tile_cropfield_growing",
+      "p": "/assets/city/Props/prop_fence_wood_SE_normal.png"
+    },
+    "!": {
+      "g": "tile_ground_grass",
+      "p": "/assets/city/Props/prop_fence_wood_SE_normal.png"
+    },
+    "@": {
+      "g": "tile_cropfield_racked"
+    },
+    "#": {
+      "g": "tile_cropfield_grown"
+    },
+    "$": {
+      "g": "tile_cropfield_growing"
+    },
+    "%": {
+      "g": "tile_ground_grass",
+      "b": "/assets/city/Buildings/bld_barn_red_SW_normal.png"
+    },
+    "^": {
+      "g": "tile_ground_concrete_normal",
+      "b": "/assets/city/Buildings/bld_firestation_SE_normal.png"
+    },
+    "&": {
+      "g": "tile_ground_grass",
+      "v": "/assets/city/Vehicles/veh_firetruck_SW_damaged.png"
+    },
+    "*": {
+      "g": "tile_cropfield_growing",
+      "b": "/assets/city/Buildings/bld_mobile_green_SE_normal.png"
+    },
+    "+": {
+      "g": "tile_road_straight_SE_normal"
+    },
+    "=": {
+      "g": "tile_road_xing_normal"
+    },
+    "?": {
+      "g": "tile_ground_concrete_normal",
+      "p": "/assets/city/Props/prop_weeds_styleD.png"
+    },
+    "/": {
+      "g": "tile_ground_concrete_normal",
+      "p": "/assets/city/Props/prop_trafficlight_standard_SE_normal.png"
+    },
+    "|": {
+      "g": "tile_ground_dirt_normal"
+    },
+    "\\": {
+      "g": "tile_ground_grass",
+      "p": "/assets/city/Props/prop_weeds_styleD.png"
+    },
+    "<": {
+      "g": "tile_road_straight_SW_damaged",
+      "v": "/assets/city/Vehicles/veh_patrol_SW_damaged.png"
+    },
+    ">": {
+      "g": "tile_ground_grass",
+      "b": "/assets/city/Buildings/bld_barn_red_SE_normal.png"
+    },
+    "a": {
+      "g": "tile_ground_grass",
+      "p": "/assets/city/Props/prop_rock_gray.png"
+    },
+    "b": {
+      "g": "tile_road_straight_SW_damaged"
+    },
+    "c": {
+      "g": "tile_road_straight_SW_damaged",
+      "p": "/assets/city/Props/prop_trashbag_black_styleA.png"
+    },
+    "d": {
+      "g": "tile_ground_concrete_normal",
+      "p": "/assets/city/Props/prop_trashcan_green_SE_normal.png"
+    },
+    "e": {
+      "g": "tile_ground_grass",
+      "p": "/assets/city/Props/prop_flowers_pink.png"
+    },
+    "f": {
+      "g": "tile_ground_concrete_normal",
+      "p": "/assets/city/Props/prop_rock_brown.png"
+    },
+    "g": {
+      "g": "tile_ground_concrete_normal",
+      "b": "/assets/city/Buildings/bld_gunshop_gray_SW_normal.png"
+    },
+    "h": {
+      "g": "tile_ground_asphalt_normal",
+      "b": "/assets/city/Buildings/bld_policestation_blue_SE_normal.png"
+    },
+    "i": {
+      "g": "tile_ground_dirt_normal",
+      "p": "/assets/city/Props/prop_rock_gray.png"
+    },
+    "j": {
+      "g": "tile_ground_concrete_normal",
+      "p": "/assets/city/Props/prop_weeds_styleA.png"
+    },
+    "k": {
+      "g": "tile_ground_concrete_normal",
+      "p": "/assets/city/Props/prop_trashcan_blue_SE_normal.png"
+    },
+    "l": {
+      "g": "tile_ground_concrete_normal",
+      "p": "/assets/city/Props/prop_tree_styleB_normal.png"
+    },
+    "m": {
+      "g": "tile_ground_concrete_normal",
+      "p": "/assets/city/Props/prop_rock_gray.png"
+    },
+    "n": {
+      "g": "tile_road_straight_SE_normal",
+      "v": "/assets/city/Vehicles/veh_pickup_orange_SE_normal.png"
+    },
+    "o": {
+      "g": "tile_ground_concrete_normal",
+      "b": "/assets/city/Buildings/bld_office2_white_SE_normal.png"
+    },
+    "p": {
+      "g": "tile_ground_concrete_normal",
+      "p": "/assets/city/Props/prop_weeds_styleB.png"
+    },
+    "q": {
+      "g": "tile_ground_concrete_normal",
+      "p": "/assets/city/Props/prop_trashbag_black_styleA.png"
+    },
+    "r": {
+      "g": "tile_ground_asphalt_normal",
+      "b": "/assets/city/Buildings/bld_office2_green_SE_normal.png"
+    },
+    "s": {
+      "g": "tile_ground_asphalt_normal",
+      "b": "/assets/city/Buildings/bld_fruitstand_neutral_SE_normal.png"
+    },
+    "t": {
+      "g": "tile_ground_concrete_normal",
+      "b": "/assets/city/Buildings/bld_office3_yellow_SW_normal.png"
+    },
+    "u": {
+      "g": "tile_ground_asphalt_normal",
+      "b": "/assets/city/Buildings/bld_church_neutral_SE_normal.png"
+    },
+    "v": {
+      "g": "tile_ground_asphalt_normal"
+    },
+    "w": {
+      "g": "tile_ground_asphalt_normal",
+      "b": "/assets/city/Buildings/bld_office2_blue_SE_normal.png"
+    },
+    "x": {
+      "g": "tile_ground_grass",
+      "p": "/assets/city/Props/prop_weeds_styleA.png"
+    },
+    "y": {
+      "g": "tile_ground_grass",
+      "p": "/assets/city/Props/prop_tree_styleC_normal.png"
+    },
+    "z": {
+      "g": "tile_ground_grass_puddle"
+    },
+    "A": {
+      "g": "tile_ground_asphalt_normal",
+      "b": "/assets/city/Buildings/bld_office2_white_SW_normal.png"
+    },
+    "B": {
+      "g": "tile_ground_asphalt_normal",
+      "b": "/assets/city/Buildings/bld_office3_blue_SE_normal.png"
+    },
+    "C": {
+      "g": "tile_ground_grass_puddle",
+      "p": "/assets/city/Props/prop_tree_styleA_normal.png"
+    },
+    "D": {
+      "g": "tile_ground_asphalt_normal",
+      "b": "/assets/city/Buildings/bld_clinic_mint_SE_normal.png"
+    },
+    "E": {
+      "g": "tile_road_straight_SW_normal",
+      "v": "/assets/city/Vehicles/veh_truck_green_SE_normal.png"
+    },
+    "F": {
+      "g": "tile_ground_asphalt_normal",
+      "p": "/assets/city/Props/prop_trashbag_black_styleA.png"
+    },
+    "G": {
+      "g": "tile_ground_concrete_normal",
+      "p": "/assets/city/Props/prop_flowers_yellow.png"
+    },
+    "H": {
+      "g": "tile_ground_grass",
+      "p": "/assets/city/Props/prop_weeds_styleC.png"
+    },
+    "I": {
+      "g": "tile_ground_grass",
+      "p": "/assets/city/Props/prop_weeds_styleB.png"
+    },
+    "J": {
+      "g": "tile_ground_grass",
+      "p": "/assets/city/Props/prop_trashbag_black_styleA.png"
+    }
+  },
+  "grid": [
+    "..._~_::;:!;~@@..:",
+    "..._~@.#$.$@~$.%$#",
+    ".^&_~_.$@*.@~_.*..",
+    "____~#___@$@~_#_@$",
+    "++++=+++++++=+++++",
+    "___?~______/~_|_|_",
+    "\\.._~_...<<_~|.>a.",
+    "..._~_...bcd~_|..|",
+    "..ef~_..g.h_~_...i",
+    "_j_f~__k____~_l||m",
+    "+n++=+++++++=+++++",
+    "/o__~_f___pm~__q__",
+    "rst_~m....e?~du...",
+    "v_w_~_..x.yz~kv...",
+    "_AB_~_C...\\z~_....",
+    "D___E_...a.m~_....",
+    "F___~G..H.I_~_.J.."
+  ]
+}

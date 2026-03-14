@@ -2,6 +2,7 @@ import { Geist, Geist_Mono, Nunito_Sans } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { UserMenu } from "@/components/user-menu"
 import { cn } from "@/lib/utils";
 
 const nunitoSans = Nunito_Sans({variable:'--font-sans'})
@@ -22,8 +23,13 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn("antialiased", fontMono.variable, "font-sans", nunitoSans.variable)}
     >
-      <body>
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className="overflow-hidden">
+        <ThemeProvider>
+          <header className="fixed top-0 right-0 left-0 z-50 flex items-center justify-end px-4 py-2">
+            <UserMenu />
+          </header>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )
