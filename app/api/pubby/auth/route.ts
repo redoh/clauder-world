@@ -1,22 +1,25 @@
 import { pubby } from "@/lib/pubby-server";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export async function POST(req: Request) {
   const { socket_id, channel_name } = await req.json();
 
   if (channel_name.startsWith("presence-")) {
-    // For presence channels, include user data
-    // TODO: Replace with your actual user auth logic
-    const userId = `user-${Math.random().toString(36).slice(2, 9)}`;
-    const auth = pubby.authenticatePresenceChannel(
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const authResponse = pubby.authenticatePresenceChannel(
       socket_id,
       channel_name,
-      userId,
-      { name: `User ${userId}` },
+      session.user.id,
+      { name: session.user.name, image: session.user.image },
     );
-    return Response.json(auth);
+    return Response.json(authResponse);
   }
 
   // For private channels
-  const auth = pubby.authenticatePrivateChannel(socket_id, channel_name);
-  return Response.json(auth);
+  const authResponse = pubby.authenticatePrivateChannel(socket_id, channel_name);
+  return Response.json(authResponse);
 }
