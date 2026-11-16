@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import type { Pubby, Channel } from "@getpubby/sdk";
+import type { Pubby, Channel, PresenceChannel } from "@getpubby/sdk";
 import { getPubbyClient } from "@/lib/pubby";
+import { observePresenceMembers, type PresenceMember } from "@/lib/presence";
 
 type ConnectionState =
   | "initialized"
@@ -80,4 +81,26 @@ export function useChannel(
   );
 
   return { channel: channelRef.current, connectionState, trigger };
+}
+
+const NO_MEMBERS: PresenceMember[] = [];
+
+export function usePresenceChannel(channelName: string) {
+  const { pubby } = usePubby();
+  const [members, setMembers] = useState<PresenceMember[]>(NO_MEMBERS);
+
+  useEffect(() => {
+    if (!pubby || !channelName) return;
+
+    const name = `presence-${channelName}`;
+    const channel = pubby.subscribe(name) as PresenceChannel;
+    const stopObserving = observePresenceMembers(channel, setMembers);
+
+    return () => {
+      stopObserving();
+      pubby.unsubscribe(name);
+    };
+  }, [pubby, channelName]);
+
+  return { members: channelName ? members : NO_MEMBERS };
 }

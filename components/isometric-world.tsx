@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react"
 import { useSession } from "@/lib/auth-client"
-import { useChannel } from "@/hooks/use-pubby"
+import { useChannel, usePresenceChannel } from "@/hooks/use-pubby"
 
 // ============================================================
 // Constants
@@ -438,25 +438,50 @@ export function IsometricWorld() {
   const { data: session } = useSession()
   const userCharIdRef = useRef<string | null>(null)
 
-  // Add/remove user character based on session
+  // Presence channel for online users
+  const { members } = usePresenceChannel(session?.user ? "world" : "")
+
+  // Sync characters from presence members + own session
   useEffect(() => {
-    if (session?.user) {
-      const userChar = createUserCharacter(session.user.id, session.user.name)
-      if (userCharIdRef.current !== userChar.id) {
-        userCharIdRef.current = userChar.id
-        setCharacters((prev) => {
-          // Remove any existing user character
-          const filtered = prev.filter((c) => !c.id.startsWith("user-"))
-          return [...filtered, userChar]
-        })
-        // Register user bubble messages
-        BUBBLE_MESSAGES[session.user.name.split(" ")[0]] = USER_BUBBLE_MESSAGES
+    if (!session?.user) {
+      if (userCharIdRef.current) {
+        userCharIdRef.current = null
+        setCharacters((prev) => prev.filter((c) => !c.id.startsWith("user-")))
       }
-    } else if (userCharIdRef.current) {
-      userCharIdRef.current = null
-      setCharacters((prev) => prev.filter((c) => !c.id.startsWith("user-")))
+      return
     }
-  }, [session])
+
+    // Ensure own character exists
+    const ownChar = createUserCharacter(session.user.id, session.user.name)
+    if (userCharIdRef.current !== ownChar.id) {
+      userCharIdRef.current = ownChar.id
+      BUBBLE_MESSAGES[session.user.name.split(" ")[0]] = USER_BUBBLE_MESSAGES
+    }
+
+    setCharacters((prev) => {
+      const npcs = prev.filter((c) => !c.id.startsWith("user-"))
+      const userChars: Character[] = []
+
+      // Add own character
+      const existingOwn = prev.find((c) => c.id === ownChar.id)
+      userChars.push(existingOwn ? { ...existingOwn, name: ownChar.name } : ownChar)
+
+      // Add other presence members
+      for (const member of members) {
+        if (member.id === session.user.id) continue
+        const existingMember = prev.find((c) => c.id === `user-${member.id}`)
+        if (existingMember) {
+          userChars.push(existingMember)
+        } else {
+          const memberChar = createUserCharacter(member.id, member.info.name)
+          BUBBLE_MESSAGES[member.info.name.split(" ")[0]] = USER_BUBBLE_MESSAGES
+          userChars.push(memberChar)
+        }
+      }
+
+      return [...npcs, ...userChars]
+    })
+  }, [session, members])
 
   // Pubby: listen for real-time user activity from Claude Code hooks
   const lastBubbleRef = useRef(0)
